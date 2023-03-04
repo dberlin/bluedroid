@@ -2,7 +2,7 @@ use crate::{
     gatt_server::characteristic::Characteristic, gatt_server::descriptor::Descriptor,
     leaky_box_raw, utilities::BleUuid,
 };
-use esp_idf_sys::*;
+use esp_idf_sys::{esp_ble_gatts_create_service, esp_bt_uuid_t, esp_gatt_srvc_id_t, esp_nofail};
 use log::debug;
 use std::{
     fmt::Formatter,

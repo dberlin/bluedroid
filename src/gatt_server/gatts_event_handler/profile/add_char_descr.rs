@@ -1,6 +1,6 @@
 use crate::gatt_server::Profile;
 use crate::utilities::BleUuid;
-use esp_idf_sys::*;
+use esp_idf_sys::{esp_ble_gatts_cb_param_t_gatts_add_char_descr_evt_param, esp_gatt_status_t_ESP_GATT_OK};
 use log::{info, warn};
 
 impl Profile {

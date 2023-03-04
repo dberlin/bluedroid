@@ -3,7 +3,7 @@
 #![warn(clippy::cargo)]
 #![warn(rustdoc::all)]
 // #![allow(clippy::wildcard_imports)]
-//#![allow(clippy::multiple_crate_versions)]
+#![allow(clippy::multiple_crate_versions)]
 // #![warn(clippy::std_instead_of_core)]
 // #![warn(clippy::std_instead_of_alloc)]
 // #![warn(clippy::alloc_instead_of_core)]

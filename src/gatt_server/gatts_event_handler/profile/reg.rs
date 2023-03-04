@@ -1,5 +1,5 @@
 use crate::gatt_server::Profile;
-use esp_idf_sys::*;
+use esp_idf_sys::{esp_ble_gatts_cb_param_t_gatts_reg_evt_param, esp_bt_status_t_ESP_BT_STATUS_SUCCESS};
 use log::{info, warn};
 
 impl Profile {

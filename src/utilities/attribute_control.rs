@@ -1,4 +1,4 @@
-use esp_idf_sys::*;
+use esp_idf_sys::{ESP_GATT_AUTO_RSP, ESP_GATT_RSP_BY_APP, esp_attr_control_t, esp_ble_gatts_cb_param_t_gatts_read_evt_param};
 use std::sync::Arc;
 
 #[derive(Clone)]
