@@ -1,3 +1,5 @@
+# Build and flash options
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 
 # Bluetooth
