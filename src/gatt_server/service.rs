@@ -4,10 +4,8 @@ use crate::{
 };
 use esp_idf_sys::{esp_ble_gatts_create_service, esp_bt_uuid_t, esp_gatt_srvc_id_t, esp_nofail};
 use log::debug;
-use std::{
-    fmt::Formatter,
-    sync::{Arc, RwLock},
-};
+use parking_lot::RwLock;
+use std::{fmt::Formatter, sync::Arc};
 
 /// Represents a GATT service.
 #[derive(Debug, Clone)]
@@ -69,7 +67,7 @@ impl Service {
     ) -> Option<Arc<RwLock<Characteristic>>> {
         self.characteristics
             .iter()
-            .find(|characteristic| characteristic.read().unwrap().attribute_handle == Some(handle))
+            .find(|characteristic| characteristic.read().attribute_handle == Some(handle))
             .cloned()
     }
 
@@ -79,7 +77,7 @@ impl Service {
     ) -> Option<Arc<RwLock<Characteristic>>> {
         self.characteristics
             .iter()
-            .find(|characteristic| characteristic.read().unwrap().uuid == id.into())
+            .find(|characteristic| characteristic.read().uuid == id.into())
             .cloned()
     }
 
@@ -89,11 +87,10 @@ impl Service {
             .filter_map(|characteristic| {
                 characteristic
                     .read()
-                    .unwrap()
                     .clone()
                     .descriptors
                     .into_iter()
-                    .find(|descriptor| descriptor.read().unwrap().uuid == id.into())
+                    .find(|descriptor| descriptor.read().uuid == id.into())
             })
             .collect()
     }
@@ -131,8 +128,8 @@ impl Service {
         let characteristics = self.characteristics.clone();
         std::thread::spawn(move || {
             for c in characteristics {
-                c.write().unwrap().register_self(service_handle);
-                while c.read().unwrap().attribute_handle.is_none() {
+                c.write().register_self(service_handle);
+                while c.read().attribute_handle.is_none() {
                     std::thread::yield_now();
                 }
             }

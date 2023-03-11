@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use crate::{
     leaky_box_raw,
@@ -11,6 +11,7 @@ use esp_idf_sys::{
     esp_ble_gatts_set_attr_value, esp_nofail,
 };
 use log::{debug, info, warn};
+use parking_lot::RwLock;
 
 /// Represents a GATT descriptor.
 #[derive(Debug, Clone)]

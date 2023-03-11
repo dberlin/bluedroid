@@ -4,12 +4,35 @@
 
 use std::{
     collections::HashSet,
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex},
 };
 
-use esp_idf_sys::{AGC_RECORRECT_EN, BLE_HW_TARGET_CODE_ESP32S3_CHIP_ECO0, BT_CTRL_SCAN_BACKOFF_UPPERLIMITMAX, CFG_MASK, CONFIG_BT_CTRL_ADV_DUP_FILT_MAX, CONFIG_BT_CTRL_BLE_MAX_ACT_EFF, CONFIG_BT_CTRL_BLE_STATIC_ACL_TX_BUF_NB, CONFIG_BT_CTRL_CE_LENGTH_TYPE_EFF, CONFIG_BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EFF, CONFIG_BT_CTRL_DFT_TX_POWER_LEVEL_EFF, CONFIG_BT_CTRL_HCI_TL_EFF, CONFIG_BT_CTRL_HW_CCA_EFF, CONFIG_BT_CTRL_HW_CCA_VAL, CONFIG_BT_CTRL_MODE_EFF, CONFIG_BT_CTRL_PINNED_TO_CORE, CONFIG_BT_CTRL_RX_ANTENNA_INDEX_EFF, CONFIG_BT_CTRL_SLEEP_CLOCK_EFF, CONFIG_BT_CTRL_SLEEP_MODE_EFF, CONFIG_BT_CTRL_TX_ANTENNA_INDEX_EFF, DUPL_SCAN_CACHE_REFRESH_PERIOD, ESP_BLE_ADV_FLAG_BREDR_NOT_SPT, ESP_BLE_ADV_FLAG_GEN_DISC, ESP_BT_CTRL_CONFIG_MAGIC_VAL, ESP_BT_CTRL_CONFIG_VERSION, ESP_ERR_NVS_NEW_VERSION_FOUND, ESP_ERR_NVS_NO_FREE_PAGES, ESP_TASK_BT_CONTROLLER_PRIO, ESP_TASK_BT_CONTROLLER_STACK, MESH_DUPLICATE_SCAN_CACHE_SIZE, NORMAL_SCAN_DUPLICATE_CACHE_SIZE, SCAN_DUPLICATE_MODE, SCAN_DUPLICATE_TYPE_VALUE, SLAVE_CE_LEN_MIN_DEFAULT, esp_ble_addr_type_t_BLE_ADDR_TYPE_RPA_PUBLIC, esp_ble_adv_channel_t_ADV_CHNL_ALL, esp_ble_adv_data_t, esp_ble_adv_filter_t_ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY, esp_ble_adv_params_t, esp_ble_adv_type_t_ADV_TYPE_IND, esp_ble_gap_cb_param_t, esp_ble_gap_register_callback, esp_ble_gatts_cb_param_t, esp_ble_gatts_register_callback, esp_bluedroid_enable, esp_bluedroid_init, esp_bt_controller_config_t, esp_bt_controller_enable, esp_bt_controller_init, esp_bt_controller_mem_release, esp_bt_mode_t_ESP_BT_MODE_BLE, esp_bt_mode_t_ESP_BT_MODE_CLASSIC_BT, esp_gap_ble_cb_event_t, esp_gatt_if_t, esp_gatts_cb_event_t, esp_nofail, nvs_flash_erase, nvs_flash_init};
+use esp_idf_sys::{
+    esp_ble_addr_type_t_BLE_ADDR_TYPE_RPA_PUBLIC, esp_ble_adv_channel_t_ADV_CHNL_ALL,
+    esp_ble_adv_data_t, esp_ble_adv_filter_t_ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+    esp_ble_adv_params_t, esp_ble_adv_type_t_ADV_TYPE_IND, esp_ble_gap_cb_param_t,
+    esp_ble_gap_register_callback, esp_ble_gatts_cb_param_t, esp_ble_gatts_register_callback,
+    esp_bluedroid_enable, esp_bluedroid_init, esp_bt_controller_config_t, esp_bt_controller_enable,
+    esp_bt_controller_init, esp_bt_controller_mem_release, esp_bt_mode_t_ESP_BT_MODE_BLE,
+    esp_bt_mode_t_ESP_BT_MODE_CLASSIC_BT, esp_gap_ble_cb_event_t, esp_gatt_if_t,
+    esp_gatts_cb_event_t, esp_nofail, nvs_flash_erase, nvs_flash_init, AGC_RECORRECT_EN,
+    BLE_HW_TARGET_CODE_ESP32S3_CHIP_ECO0, BT_CTRL_SCAN_BACKOFF_UPPERLIMITMAX, CFG_MASK,
+    CONFIG_BT_CTRL_ADV_DUP_FILT_MAX, CONFIG_BT_CTRL_BLE_MAX_ACT_EFF,
+    CONFIG_BT_CTRL_BLE_STATIC_ACL_TX_BUF_NB, CONFIG_BT_CTRL_CE_LENGTH_TYPE_EFF,
+    CONFIG_BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EFF, CONFIG_BT_CTRL_DFT_TX_POWER_LEVEL_EFF,
+    CONFIG_BT_CTRL_HCI_TL_EFF, CONFIG_BT_CTRL_HW_CCA_EFF, CONFIG_BT_CTRL_HW_CCA_VAL,
+    CONFIG_BT_CTRL_MODE_EFF, CONFIG_BT_CTRL_PINNED_TO_CORE, CONFIG_BT_CTRL_RX_ANTENNA_INDEX_EFF,
+    CONFIG_BT_CTRL_SLEEP_CLOCK_EFF, CONFIG_BT_CTRL_SLEEP_MODE_EFF,
+    CONFIG_BT_CTRL_TX_ANTENNA_INDEX_EFF, DUPL_SCAN_CACHE_REFRESH_PERIOD,
+    ESP_BLE_ADV_FLAG_BREDR_NOT_SPT, ESP_BLE_ADV_FLAG_GEN_DISC, ESP_BT_CTRL_CONFIG_MAGIC_VAL,
+    ESP_BT_CTRL_CONFIG_VERSION, ESP_ERR_NVS_NEW_VERSION_FOUND, ESP_ERR_NVS_NO_FREE_PAGES,
+    ESP_TASK_BT_CONTROLLER_PRIO, ESP_TASK_BT_CONTROLLER_STACK, MESH_DUPLICATE_SCAN_CACHE_SIZE,
+    NORMAL_SCAN_DUPLICATE_CACHE_SIZE, SCAN_DUPLICATE_MODE, SCAN_DUPLICATE_TYPE_VALUE,
+    SLAVE_CE_LEN_MIN_DEFAULT,
+};
 use lazy_static::lazy_static;
 use log::{info, warn};
+use parking_lot::RwLock;
 
 use crate::{
     leaky_box_raw,
@@ -117,7 +140,7 @@ impl GattServer {
 
         // Registration of profiles, services, characteristics and descriptors.
         self.profiles.iter().for_each(|profile| {
-            profile.write().unwrap().register_self();
+            profile.write().register_self();
         });
     }
 
@@ -170,7 +193,7 @@ impl GattServer {
     ///
     /// Panics if the service lock is poisoned.
     pub fn advertise_service(&mut self, service: &Arc<RwLock<Service>>) -> &mut Self {
-        let uuid = service.read().unwrap().uuid.as_uuid128_array();
+        let uuid = service.read().uuid.as_uuid128_array();
         self.scan_response_data.p_service_uuid = leaky_box_raw!(uuid).cast::<u8>();
         self.scan_response_data.service_uuid_len = uuid.len() as u16;
 
@@ -191,7 +214,7 @@ impl GattServer {
     pub(crate) fn get_profile(&self, interface: u8) -> Option<Arc<RwLock<Profile>>> {
         self.profiles
             .iter()
-            .find(|profile| profile.write().unwrap().interface == Some(interface))
+            .find(|profile| profile.write().interface == Some(interface))
             .cloned()
     }
 

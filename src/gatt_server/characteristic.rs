@@ -10,10 +10,8 @@ use esp_idf_sys::{
     esp_ble_gatts_set_attr_value, esp_nofail,
 };
 use log::{debug, warn};
-use std::{
-    fmt::Formatter,
-    sync::{Arc, RwLock},
-};
+use parking_lot::RwLock;
+use std::{fmt::Formatter, sync::Arc};
 
 type WriteCallback = dyn Fn(Vec<u8>, esp_ble_gatts_cb_param_t_gatts_write_evt_param) + Send + Sync;
 
@@ -288,12 +286,9 @@ impl Characteristic {
     pub(crate) fn register_descriptors(&mut self) {
         debug!("Registering {}'s descriptors.", &self);
         self.descriptors.iter_mut().for_each(|descriptor| {
-            descriptor
-                .write()
-                .unwrap()
-                .register_self(self.service_handle.expect(
-                    "Cannot register a descriptor to a characteristic without a service handle.",
-                ));
+            descriptor.write().register_self(self.service_handle.expect(
+                "Cannot register a descriptor to a characteristic without a service handle.",
+            ));
         });
     }
 
@@ -304,9 +299,9 @@ impl Characteristic {
         if let Some(cccd) = self
             .descriptors
             .iter()
-            .find(|desc| desc.read().unwrap().uuid == BleUuid::Uuid16(0x2902))
+            .find(|desc| desc.read().uuid == BleUuid::Uuid16(0x2902))
         {
-            if let AttributeControl::ResponseByApp(callback) = &cccd.read().unwrap().control {
+            if let AttributeControl::ResponseByApp(callback) = &cccd.read().control {
                 let value = callback(param);
 
                 return Some((

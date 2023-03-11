@@ -1,6 +1,10 @@
 use crate::gatt_server::GattServer;
 use crate::utilities::BleUuid;
-use esp_idf_sys::{esp, esp_ble_gatts_cb_param_t_gatts_read_evt_param, esp_ble_gatts_cb_param_t_gatts_set_attr_val_evt_param, esp_ble_gatts_get_attr_value, esp_ble_gatts_send_indicate, esp_gatt_if_t, esp_gatt_status_t_ESP_GATT_OK, esp_nofail};
+use esp_idf_sys::{
+    esp, esp_ble_gatts_cb_param_t_gatts_read_evt_param,
+    esp_ble_gatts_cb_param_t_gatts_set_attr_val_evt_param, esp_ble_gatts_get_attr_value,
+    esp_ble_gatts_send_indicate, esp_gatt_if_t, esp_gatt_status_t_ESP_GATT_OK, esp_nofail,
+};
 use log::{debug, warn};
 
 impl GattServer {
@@ -22,19 +26,19 @@ impl GattServer {
             return;
         };
 
-        let Some(service) = profile.read().unwrap().get_service(param.srvc_handle) else {
+        let Some(service) = profile.read().get_service(param.srvc_handle) else {
             warn!("Cannot find service described by service handle {} received in set attribute value event.", param.srvc_handle);
             return;
         };
 
-        let Some(characteristic) = service.read().unwrap().get_characteristic_by_handle(param.attr_handle) else {
+        let Some(characteristic) = service.read().get_characteristic_by_handle(param.attr_handle) else {
             warn!("Cannot find characteristic described by service handle {} and attribute handle {} received in set attribute value event.", param.srvc_handle, param.attr_handle);
             return;
         };
 
         debug!(
             "Received set attribute value event for characteristic {}.",
-            characteristic.read().unwrap()
+            characteristic.read()
         );
 
         for connection in self.active_connections.clone() {
@@ -44,33 +48,28 @@ impl GattServer {
                 conn_id: connection.id,
                 handle: characteristic
                     .read()
-                    .unwrap()
                     .descriptors
                     .iter()
-                    .find(|desc| desc.read().unwrap().uuid == BleUuid::Uuid16(0x2902))
+                    .find(|desc| desc.read().uuid == BleUuid::Uuid16(0x2902))
                     .unwrap()
                     .read()
-                    .unwrap()
                     .attribute_handle
                     .unwrap(),
                 ..Default::default()
             };
 
-            let status = characteristic
-                .read()
-                .unwrap()
-                .get_cccd_status(simulated_read_param);
+            let status = characteristic.read().get_cccd_status(simulated_read_param);
 
             // Check that the status is not None, otherwise bail.
             let Some((notification, indication)) = status else { return; };
-            let properties = characteristic.read().unwrap().properties;
+            let properties = characteristic.read().properties;
 
-            let mut internal_value = characteristic.write().unwrap().internal_value.clone();
+            let mut internal_value = characteristic.write().internal_value.clone();
 
             if properties.indicate && indication {
                 debug!(
                     "Indicating {} value change to {:02X?}.",
-                    characteristic.read().unwrap(),
+                    characteristic.read(),
                     connection.id
                 );
                 let result = unsafe {
@@ -93,7 +92,7 @@ impl GattServer {
             } else if properties.notify && notification {
                 debug!(
                     "Notifying {} value change to {}.",
-                    characteristic.read().unwrap(),
+                    characteristic.read(),
                     connection
                 );
                 let result = unsafe {
@@ -127,7 +126,7 @@ impl GattServer {
 
         debug!(
             "Characteristic {} value changed to {:02X?}.",
-            characteristic.read().unwrap(),
+            characteristic.read(),
             vector
         );
     }

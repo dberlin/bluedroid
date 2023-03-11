@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use bluedroid::{
     gatt_server::{Characteristic, Profile, Service, GLOBAL_GATT_SERVER},
@@ -7,6 +7,7 @@ use bluedroid::{
 
 use esp_idf_sys::{esp_get_free_heap_size, esp_get_free_internal_heap_size};
 use log::info;
+use parking_lot::RwLock;
 
 fn main() {
     esp_idf_sys::link_patches();
@@ -45,11 +46,11 @@ fn main() {
     )
     .on_read(move |_param| {
         info!("Read from writable characteristic.");
-        return char_value_read.read().unwrap().clone();
+        return char_value_read.read().clone();
     })
     .on_write(move |value, _param| {
         info!("Wrote to writable characteristic: {:?}", value);
-        *char_value_write.write().unwrap() = value;
+        *char_value_write.write() = value;
     })
     .show_name()
     .build();
@@ -117,11 +118,9 @@ fn main() {
             counter += 1;
             notifying_characteristic
                 .write()
-                .unwrap()
                 .set_value(format!("Counter: {counter}").as_bytes().to_vec());
             indicating_characteristic
                 .write()
-                .unwrap()
                 .set_value(format!("Counter: {counter}").as_bytes().to_vec());
             std::thread::sleep(std::time::Duration::from_secs(1));
         }

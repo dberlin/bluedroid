@@ -1,6 +1,9 @@
 use crate::gatt_server::Profile;
 use crate::utilities::AttributeControl;
-use esp_idf_sys::{esp_ble_gatts_cb_param_t_gatts_read_evt_param, esp_ble_gatts_send_response, esp_gatt_if_t, esp_gatt_rsp_t, esp_gatt_status_t_ESP_GATT_OK, esp_gatt_value_t, esp_nofail};
+use esp_idf_sys::{
+    esp_ble_gatts_cb_param_t_gatts_read_evt_param, esp_ble_gatts_send_response, esp_gatt_if_t,
+    esp_gatt_rsp_t, esp_gatt_status_t_ESP_GATT_OK, esp_gatt_value_t, esp_nofail,
+};
 use log::debug;
 
 impl Profile {
@@ -12,19 +15,18 @@ impl Profile {
         for service in &self.services {
             service
                 .read()
-                .unwrap()
                 .characteristics
                 .iter()
                 .for_each(|characteristic| {
-                    if characteristic.read().unwrap().attribute_handle == Some(param.handle) {
+                    if characteristic.read().attribute_handle == Some(param.handle) {
                         debug!(
                             "Received read event for characteristic {}.",
-                            characteristic.read().unwrap()
+                            characteristic.read()
                         );
 
                         // If the characteristic has a read handler, call it.
                         if let AttributeControl::ResponseByApp(callback) =
-                            &characteristic.read().unwrap().control
+                            &characteristic.read().control
                         {
                             let value = callback(param);
 
@@ -56,25 +58,23 @@ impl Profile {
                     } else {
                         characteristic
                             .read()
-                            .unwrap()
                             .descriptors
                             .iter()
                             .for_each(|descriptor| {
                                 debug!(
                                     "MCC: Checking descriptor {} ({:?}).",
-                                    descriptor.read().unwrap(),
-                                    descriptor.read().unwrap().attribute_handle
+                                    descriptor.read(),
+                                    descriptor.read().attribute_handle
                                 );
 
-                                if descriptor.read().unwrap().attribute_handle == Some(param.handle)
-                                {
+                                if descriptor.read().attribute_handle == Some(param.handle) {
                                     debug!(
                                         "Received read event for descriptor {}.",
-                                        descriptor.read().unwrap()
+                                        descriptor.read()
                                     );
 
                                     if let AttributeControl::ResponseByApp(callback) =
-                                        &descriptor.read().unwrap().control
+                                        &descriptor.read().control
                                     {
                                         let value = callback(param);
 

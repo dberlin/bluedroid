@@ -31,6 +31,7 @@ esp-idf-svc = { git = "https://github.com/esp-rs/esp-idf-svc.git", version = "0.
 embedded-svc = { version = "0.24.0" }
 log = { version = "0.4.17" }
 lazy_static = { version = "1.4.0" }
+parking_lot = "0.12.1"
 
 [build-dependencies]
 embuild = { version = "0.31.0" }

@@ -10,9 +10,9 @@ impl Profile {
         };
 
         if param.status == esp_gatt_status_t_ESP_GATT_OK {
-            debug!("GATT service {} started.", service.read().unwrap());
+            debug!("GATT service {} started.", *service.read());
         } else {
-            warn!("GATT service {} failed to start.", service.read().unwrap());
+            warn!("GATT service {} failed to start.", *service.read());
         }
     }
 }

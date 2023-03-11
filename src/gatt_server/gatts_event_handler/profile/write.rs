@@ -1,6 +1,10 @@
 use crate::gatt_server::Profile;
 use crate::utilities::AttributeControl;
-use esp_idf_sys::{esp_ble_gatts_cb_param_t_gatts_read_evt_param, esp_ble_gatts_cb_param_t_gatts_write_evt_param, esp_ble_gatts_send_response, esp_gatt_if_t, esp_gatt_rsp_t, esp_gatt_status_t_ESP_GATT_OK, esp_gatt_value_t, esp_nofail};
+use esp_idf_sys::{
+    esp_ble_gatts_cb_param_t_gatts_read_evt_param, esp_ble_gatts_cb_param_t_gatts_write_evt_param,
+    esp_ble_gatts_send_response, esp_gatt_if_t, esp_gatt_rsp_t, esp_gatt_status_t_ESP_GATT_OK,
+    esp_gatt_value_t, esp_nofail,
+};
 use log::debug;
 
 impl Profile {
@@ -13,19 +17,17 @@ impl Profile {
         for service in &self.services {
             service
                 .read()
-                .unwrap()
                 .characteristics
                 .iter()
                 .for_each(|characteristic| {
-                    if characteristic.read().unwrap().attribute_handle == Some(param.handle) {
+                    if characteristic.read().attribute_handle == Some(param.handle) {
                         debug!(
                             "Received write event for characteristic {}.",
-                            characteristic.read().unwrap()
+                            characteristic.read()
                         );
 
                         // If the characteristic has a write handler, call it.
-                        if let Some(write_callback) = &characteristic.read().unwrap().write_callback
-                        {
+                        if let Some(write_callback) = &characteristic.read().write_callback {
                             let value = unsafe {
                                 std::slice::from_raw_parts(param.value, param.len as usize)
                             }
@@ -36,7 +38,7 @@ impl Profile {
                             // Send response if needed.
                             if param.need_rsp {
                                 if let AttributeControl::ResponseByApp(read_callback) =
-                                    &characteristic.read().unwrap().control
+                                    &characteristic.read().control
                                 {
                                     // Simulate a read operation.
                                     let param_as_read_operation =
@@ -82,20 +84,16 @@ impl Profile {
                     } else {
                         characteristic
                             .read()
-                            .unwrap()
                             .descriptors
                             .iter()
                             .for_each(|descriptor| {
-                                if descriptor.read().unwrap().attribute_handle == Some(param.handle)
-                                {
+                                if descriptor.read().attribute_handle == Some(param.handle) {
                                     debug!(
                                         "Received write event for descriptor {}.",
-                                        descriptor.read().unwrap()
+                                        descriptor.read()
                                     );
 
-                                    if let Some(write_callback) =
-                                        descriptor.read().unwrap().write_callback
-                                    {
+                                    if let Some(write_callback) = descriptor.read().write_callback {
                                         let value = unsafe {
                                             std::slice::from_raw_parts(
                                                 param.value,
@@ -109,7 +107,7 @@ impl Profile {
                                         // Send response if needed.
                                         if param.need_rsp {
                                             if let AttributeControl::ResponseByApp(read_callback) =
-                                                &descriptor.read().unwrap().control
+                                                &descriptor.read().control
                                             {
                                                 // Simulate a read operation.
                                                 let param_as_read_operation =

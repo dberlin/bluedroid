@@ -1,8 +1,9 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use crate::gatt_server::service::Service;
 use esp_idf_sys::{esp_ble_gatts_app_register, esp_gatt_id_t, esp_nofail};
 use log::debug;
+use parking_lot::RwLock;
 
 /// Represents a GATT profile.
 ///
@@ -58,7 +59,7 @@ impl Profile {
 
     pub(crate) fn get_service(&self, handle: u16) -> Option<Arc<RwLock<Service>>> {
         for service in &self.services {
-            if service.read().unwrap().handle == Some(handle) {
+            if service.read().handle == Some(handle) {
                 return Some(service.clone());
             }
         }
@@ -68,7 +69,7 @@ impl Profile {
 
     pub(crate) fn get_service_by_id(&self, id: esp_gatt_id_t) -> Option<Arc<RwLock<Service>>> {
         for service in &self.services {
-            if service.read().unwrap().uuid == id.into() {
+            if service.read().uuid == id.into() {
                 return Some(service.clone());
             }
         }
@@ -84,10 +85,7 @@ impl Profile {
     pub(crate) fn register_services(&mut self) {
         debug!("Registering {}'s services.", &self);
         self.services.iter_mut().for_each(|service| {
-            service
-                .write()
-                .unwrap()
-                .register_self(self.interface.unwrap());
+            service.write().register_self(self.interface.unwrap());
         });
     }
 }

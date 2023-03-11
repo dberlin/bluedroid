@@ -64,16 +64,9 @@ impl GattServer {
         }
 
         self.profiles.iter().for_each(|profile| {
-            if profile.read().unwrap().interface == Some(gatts_if) {
-                debug!(
-                    "Handling event {} on profile {}.",
-                    event,
-                    profile.read().unwrap()
-                );
-                profile
-                    .write()
-                    .unwrap()
-                    .gatts_event_handler(event, gatts_if, param);
+            if profile.read().interface == Some(gatts_if) {
+                debug!("Handling event {} on profile {}.", event, profile.read());
+                profile.write().gatts_event_handler(event, gatts_if, param);
             }
         });
     }

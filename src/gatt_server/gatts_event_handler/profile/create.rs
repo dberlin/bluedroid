@@ -1,6 +1,9 @@
 use crate::gatt_server::Profile;
 use crate::utilities::BleUuid;
-use esp_idf_sys::{esp_ble_gatts_cb_param_t_gatts_create_evt_param, esp_ble_gatts_start_service, esp_gatt_status_t_ESP_GATT_OK, esp_nofail};
+use esp_idf_sys::{
+    esp_ble_gatts_cb_param_t_gatts_create_evt_param, esp_ble_gatts_start_service,
+    esp_gatt_status_t_ESP_GATT_OK, esp_nofail,
+};
 use log::{info, warn};
 
 impl Profile {
@@ -10,22 +13,20 @@ impl Profile {
             return;
         };
 
-        service.write().unwrap().handle = Some(param.service_handle);
+        service.write().handle = Some(param.service_handle);
 
         if param.status == esp_gatt_status_t_ESP_GATT_OK {
             info!(
                 "GATT service {} registered on handle 0x{:04x}.",
-                service.read().unwrap(),
-                service.read().unwrap().handle.unwrap()
+                service.read(),
+                service.read().handle.unwrap()
             );
 
             unsafe {
-                esp_nofail!(esp_ble_gatts_start_service(
-                    service.read().unwrap().handle.unwrap()
-                ));
+                esp_nofail!(esp_ble_gatts_start_service(service.read().handle.unwrap()));
             }
 
-            service.write().unwrap().register_characteristics();
+            service.write().register_characteristics();
         } else {
             warn!("GATT service registration failed.");
         }

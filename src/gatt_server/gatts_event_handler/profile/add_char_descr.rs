@@ -1,6 +1,8 @@
 use crate::gatt_server::Profile;
 use crate::utilities::BleUuid;
-use esp_idf_sys::{esp_ble_gatts_cb_param_t_gatts_add_char_descr_evt_param, esp_gatt_status_t_ESP_GATT_OK};
+use esp_idf_sys::{
+    esp_ble_gatts_cb_param_t_gatts_add_char_descr_evt_param, esp_gatt_status_t_ESP_GATT_OK,
+};
 use log::{info, warn};
 
 impl Profile {
@@ -16,23 +18,20 @@ impl Profile {
             return;
         };
 
-        let descriptors = service
-            .read()
-            .unwrap()
-            .get_descriptors_by_id(param.descr_uuid);
+        let descriptors = service.read().get_descriptors_by_id(param.descr_uuid);
 
-        let Some(descriptor) = descriptors.iter().find(|d| d.read().unwrap().attribute_handle.is_none()) else {
+        let Some(descriptor) = descriptors.iter().find(|d| d.read().attribute_handle.is_none()) else {
             warn!("Cannot find service described by identifier {} received in descriptor creation event.", BleUuid::from(param.descr_uuid));
             return;
         };
 
         if param.status == esp_gatt_status_t_ESP_GATT_OK {
             info!(
-                "GATT descriptor {} registered at attribute handle 0x{:04x}.",
-                descriptor.read().unwrap(),
+                "GATT descriptor {:?} registered at attribute handle 0x{:04x}.",
+                descriptor.read(),
                 param.attr_handle
             );
-            descriptor.write().unwrap().attribute_handle = Some(param.attr_handle);
+            descriptor.write().attribute_handle = Some(param.attr_handle);
         } else {
             warn!("GATT descriptor registration failed.");
         }

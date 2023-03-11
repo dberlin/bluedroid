@@ -15,10 +15,10 @@ impl GattServer {
             let profile = self
                 .profiles
                 .iter()
-                .find(|profile| (*profile).read().unwrap().identifier == param.app_id)
+                .find(|profile| (*profile).read().identifier == param.app_id)
                 .expect("No profile found with received application identifier.");
 
-            profile.write().unwrap().interface = Some(gatts_if);
+            profile.write().interface = Some(gatts_if);
 
             if !self.advertisement_configured {
                 unsafe {
