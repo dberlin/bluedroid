@@ -27,7 +27,7 @@ cargo-args = ["-Z", "build-std"]
 
 [dependencies]
 esp-idf-sys = { version = "0.32.1", features = ["native"] }
-esp-idf-svc = { git = "https://github.com/esp-rs/esp-idf-svc.git", version = "0.45.0" }
+esp-idf-svc = { version = "0.45.0" }
 embedded-svc = { version = "0.24.0" }
 log = { version = "0.4.17" }
 lazy_static = { version = "1.4.0" }
@@ -40,7 +40,7 @@ anyhow = { version = "1.0.69" }
 [dev-dependencies]
 anyhow = { version = "1.0.69" }
 esp-idf-sys = { version = "0.32.1", features = ["native", "binstart"] }
-esp-idf-svc = { git = "https://github.com/esp-rs/esp-idf-svc.git", version = "0.45.0" }
+esp-idf-svc = { version = "0.45.0" }
 esp-idf-hal = { version = "=0.40.1" }
 embedded-hal = { version = "1.0.0-alpha.9" }
 
