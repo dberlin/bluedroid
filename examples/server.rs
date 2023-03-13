@@ -91,7 +91,6 @@ fn main() {
 
     GLOBAL_GATT_SERVER
         .lock()
-        .unwrap()
         .profile(profile)
         .device_name("ESP32-GATT-Server")
         .appearance(bluedroid::utilities::Appearance::WristWornPulseOximeter)

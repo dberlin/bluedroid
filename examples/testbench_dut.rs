@@ -105,7 +105,6 @@ fn main() {
 
     GLOBAL_GATT_SERVER
         .lock()
-        .unwrap()
         .profile(profile)
         .device_name("BLUEDROID-DUT")
         .appearance(bluedroid::utilities::Appearance::GenericUnknown)

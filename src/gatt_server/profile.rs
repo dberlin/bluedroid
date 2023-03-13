@@ -1,10 +1,11 @@
-use std::sync::Arc;
-
-use crate::gatt_server::service::Service;
+use super::LockedService;
 use esp_idf_sys::{esp_ble_gatts_app_register, esp_gatt_id_t, esp_nofail};
 use log::debug;
 use parking_lot::RwLock;
+use std::sync::Arc;
 
+/// Shorthand for our locked profiles that are returned everywhere
+pub type LockedProfile = Arc<RwLock<Profile>>;
 /// Represents a GATT profile.
 ///
 /// # Notes
@@ -16,7 +17,7 @@ use parking_lot::RwLock;
 #[derive(Debug, Clone)]
 pub struct Profile {
     name: Option<String>,
-    pub(crate) services: Vec<Arc<RwLock<Service>>>,
+    pub(crate) services: Vec<LockedService>,
     pub(crate) identifier: u16,
     pub(crate) interface: Option<u8>,
 }
@@ -43,7 +44,7 @@ impl Profile {
 
     /// Adds a [`Service`] to the [`Profile`].
     #[must_use]
-    pub fn service(&mut self, service: &Arc<RwLock<Service>>) -> &mut Self {
+    pub fn service(&mut self, service: &LockedService) -> &mut Self {
         self.services.push(service.clone());
         self
     }
@@ -53,11 +54,11 @@ impl Profile {
     /// The returned value can be passed to any function of this crate that expects a [`Profile`].
     /// It can be used in different threads, because it is protected by an `RwLock`.
     #[must_use]
-    pub fn build(&self) -> Arc<RwLock<Self>> {
+    pub fn build(&self) -> LockedProfile {
         Arc::new(RwLock::new(self.clone()))
     }
 
-    pub(crate) fn get_service(&self, handle: u16) -> Option<Arc<RwLock<Service>>> {
+    pub(crate) fn get_service(&self, handle: u16) -> Option<LockedService> {
         for service in &self.services {
             if service.read().handle == Some(handle) {
                 return Some(service.clone());
@@ -67,7 +68,7 @@ impl Profile {
         None
     }
 
-    pub(crate) fn get_service_by_id(&self, id: esp_gatt_id_t) -> Option<Arc<RwLock<Service>>> {
+    pub(crate) fn get_service_by_id(&self, id: esp_gatt_id_t) -> Option<LockedService> {
         for service in &self.services {
             if service.read().uuid == id.into() {
                 return Some(service.clone());

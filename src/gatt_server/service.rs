@@ -1,18 +1,20 @@
-use crate::{
-    gatt_server::characteristic::Characteristic, gatt_server::descriptor::Descriptor,
-    leaky_box_raw, utilities::BleUuid,
-};
+use crate::{leaky_box_raw, utilities::BleUuid};
 use esp_idf_sys::{esp_ble_gatts_create_service, esp_bt_uuid_t, esp_gatt_srvc_id_t, esp_nofail};
 use log::debug;
 use parking_lot::RwLock;
 use std::{fmt::Formatter, sync::Arc};
+
+use super::{LockedCharacteristic, LockedDescriptor};
+
+/// Shorthand for our locked services that are returned everywhere
+pub type LockedService = Arc<RwLock<Service>>;
 
 /// Represents a GATT service.
 #[derive(Debug, Clone)]
 pub struct Service {
     name: Option<String>,
     pub(crate) uuid: BleUuid,
-    pub(crate) characteristics: Vec<Arc<RwLock<Characteristic>>>,
+    pub(crate) characteristics: Vec<LockedCharacteristic>,
     primary: bool,
     pub(crate) handle: Option<u16>,
 }
@@ -47,7 +49,7 @@ impl Service {
     }
 
     /// Adds a [`Characteristic`] to the [`Service`].
-    pub fn characteristic(&mut self, characteristic: &Arc<RwLock<Characteristic>>) -> &mut Self {
+    pub fn characteristic(&mut self, characteristic: &LockedCharacteristic) -> &mut Self {
         self.characteristics.push(characteristic.clone());
         self
     }
@@ -57,14 +59,11 @@ impl Service {
     /// The returned value can be passed to any function of this crate that expects a [`Service`].
     /// It can be used in different threads, because it is protected by an `RwLock`.
     #[must_use]
-    pub fn build(&self) -> Arc<RwLock<Self>> {
+    pub fn build(&self) -> LockedService {
         Arc::new(RwLock::new(self.clone()))
     }
 
-    pub(crate) fn get_characteristic_by_handle(
-        &self,
-        handle: u16,
-    ) -> Option<Arc<RwLock<Characteristic>>> {
+    pub(crate) fn get_characteristic_by_handle(&self, handle: u16) -> Option<LockedCharacteristic> {
         self.characteristics
             .iter()
             .find(|characteristic| characteristic.read().attribute_handle == Some(handle))
@@ -74,14 +73,14 @@ impl Service {
     pub(crate) fn get_characteristic_by_id(
         &self,
         id: esp_bt_uuid_t,
-    ) -> Option<Arc<RwLock<Characteristic>>> {
+    ) -> Option<LockedCharacteristic> {
         self.characteristics
             .iter()
             .find(|characteristic| characteristic.read().uuid == id.into())
             .cloned()
     }
 
-    pub(crate) fn get_descriptors_by_id(&self, id: esp_bt_uuid_t) -> Vec<Arc<RwLock<Descriptor>>> {
+    pub(crate) fn get_descriptors_by_id(&self, id: esp_bt_uuid_t) -> Vec<LockedDescriptor> {
         self.characteristics
             .iter()
             .filter_map(|characteristic| {

@@ -13,6 +13,8 @@ use esp_idf_sys::{
 use log::{debug, info, warn};
 use parking_lot::RwLock;
 
+/// Shorthand for our locked descriptors that are returned everywhere
+pub type LockedDescriptor = Arc<RwLock<Descriptor>>;
 /// Represents a GATT descriptor.
 #[derive(Debug, Clone)]
 pub struct Descriptor {
@@ -126,7 +128,7 @@ impl Descriptor {
     /// The returned value can be passed to any function of this crate that expects a [`Descriptor`].
     /// It can be used in different threads, because it is protected by an `RwLock`.
     #[must_use]
-    pub fn build(&self) -> Arc<RwLock<Self>> {
+    pub fn build(&self) -> LockedDescriptor {
         Arc::new(RwLock::new(self.clone()))
     }
     pub(crate) fn register_self(&mut self, service_handle: u16) {

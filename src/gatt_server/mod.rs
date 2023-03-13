@@ -2,37 +2,35 @@
 
 #![allow(clippy::cast_possible_truncation)]
 
-use std::{
-    collections::HashSet,
-    sync::{Arc, Mutex},
-};
+use std::collections::HashSet;
 
 use esp_idf_sys::{
     esp_ble_addr_type_t_BLE_ADDR_TYPE_RPA_PUBLIC, esp_ble_adv_channel_t_ADV_CHNL_ALL,
     esp_ble_adv_data_t, esp_ble_adv_filter_t_ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
     esp_ble_adv_params_t, esp_ble_adv_type_t_ADV_TYPE_IND, esp_ble_gap_cb_param_t,
     esp_ble_gap_register_callback, esp_ble_gatts_cb_param_t, esp_ble_gatts_register_callback,
-    esp_bluedroid_enable, esp_bluedroid_init, esp_bt_controller_config_t, esp_bt_controller_enable,
+    esp_ble_power_type_t_ESP_BLE_PWR_TYPE_DEFAULT, esp_ble_tx_power_set, esp_bluedroid_enable,
+    esp_bluedroid_init, esp_bt_controller_config_t, esp_bt_controller_enable,
     esp_bt_controller_init, esp_bt_controller_mem_release, esp_bt_mode_t_ESP_BT_MODE_BLE,
     esp_bt_mode_t_ESP_BT_MODE_CLASSIC_BT, esp_gap_ble_cb_event_t, esp_gatt_if_t,
-    esp_gatts_cb_event_t, esp_nofail, nvs_flash_erase, nvs_flash_init, AGC_RECORRECT_EN,
-    BLE_HW_TARGET_CODE_ESP32S3_CHIP_ECO0, BT_CTRL_SCAN_BACKOFF_UPPERLIMITMAX, CFG_MASK,
-    CONFIG_BT_CTRL_ADV_DUP_FILT_MAX, CONFIG_BT_CTRL_BLE_MAX_ACT_EFF,
-    CONFIG_BT_CTRL_BLE_STATIC_ACL_TX_BUF_NB, CONFIG_BT_CTRL_CE_LENGTH_TYPE_EFF,
-    CONFIG_BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EFF, CONFIG_BT_CTRL_DFT_TX_POWER_LEVEL_EFF,
-    CONFIG_BT_CTRL_HCI_TL_EFF, CONFIG_BT_CTRL_HW_CCA_EFF, CONFIG_BT_CTRL_HW_CCA_VAL,
-    CONFIG_BT_CTRL_MODE_EFF, CONFIG_BT_CTRL_PINNED_TO_CORE, CONFIG_BT_CTRL_RX_ANTENNA_INDEX_EFF,
-    CONFIG_BT_CTRL_SLEEP_CLOCK_EFF, CONFIG_BT_CTRL_SLEEP_MODE_EFF,
-    CONFIG_BT_CTRL_TX_ANTENNA_INDEX_EFF, DUPL_SCAN_CACHE_REFRESH_PERIOD,
-    ESP_BLE_ADV_FLAG_BREDR_NOT_SPT, ESP_BLE_ADV_FLAG_GEN_DISC, ESP_BT_CTRL_CONFIG_MAGIC_VAL,
-    ESP_BT_CTRL_CONFIG_VERSION, ESP_ERR_NVS_NEW_VERSION_FOUND, ESP_ERR_NVS_NO_FREE_PAGES,
-    ESP_TASK_BT_CONTROLLER_PRIO, ESP_TASK_BT_CONTROLLER_STACK, MESH_DUPLICATE_SCAN_CACHE_SIZE,
-    NORMAL_SCAN_DUPLICATE_CACHE_SIZE, SCAN_DUPLICATE_MODE, SCAN_DUPLICATE_TYPE_VALUE,
-    SLAVE_CE_LEN_MIN_DEFAULT,
+    esp_gatts_cb_event_t, esp_nofail, esp_power_level_t_ESP_PWR_LVL_P21, nvs_flash_erase,
+    nvs_flash_init, AGC_RECORRECT_EN, BLE_HW_TARGET_CODE_ESP32S3_CHIP_ECO0,
+    BT_CTRL_SCAN_BACKOFF_UPPERLIMITMAX, CFG_MASK, CONFIG_BT_CTRL_ADV_DUP_FILT_MAX,
+    CONFIG_BT_CTRL_BLE_MAX_ACT_EFF, CONFIG_BT_CTRL_BLE_STATIC_ACL_TX_BUF_NB,
+    CONFIG_BT_CTRL_CE_LENGTH_TYPE_EFF, CONFIG_BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EFF,
+    CONFIG_BT_CTRL_DFT_TX_POWER_LEVEL_EFF, CONFIG_BT_CTRL_HCI_TL_EFF, CONFIG_BT_CTRL_HW_CCA_EFF,
+    CONFIG_BT_CTRL_HW_CCA_VAL, CONFIG_BT_CTRL_MODE_EFF, CONFIG_BT_CTRL_PINNED_TO_CORE,
+    CONFIG_BT_CTRL_RX_ANTENNA_INDEX_EFF, CONFIG_BT_CTRL_SLEEP_CLOCK_EFF,
+    CONFIG_BT_CTRL_SLEEP_MODE_EFF, CONFIG_BT_CTRL_TX_ANTENNA_INDEX_EFF,
+    DUPL_SCAN_CACHE_REFRESH_PERIOD, ESP_BLE_ADV_FLAG_BREDR_NOT_SPT, ESP_BLE_ADV_FLAG_GEN_DISC,
+    ESP_BT_CTRL_CONFIG_MAGIC_VAL, ESP_BT_CTRL_CONFIG_VERSION, ESP_ERR_NVS_NEW_VERSION_FOUND,
+    ESP_ERR_NVS_NO_FREE_PAGES, ESP_TASK_BT_CONTROLLER_PRIO, ESP_TASK_BT_CONTROLLER_STACK,
+    MESH_DUPLICATE_SCAN_CACHE_SIZE, NORMAL_SCAN_DUPLICATE_CACHE_SIZE, SCAN_DUPLICATE_MODE,
+    SCAN_DUPLICATE_TYPE_VALUE, SLAVE_CE_LEN_MIN_DEFAULT,
 };
 use lazy_static::lazy_static;
 use log::{info, warn};
-use parking_lot::RwLock;
+use parking_lot::Mutex;
 
 use crate::{
     leaky_box_raw,
@@ -40,8 +38,12 @@ use crate::{
 };
 
 pub use characteristic::Characteristic;
+pub use characteristic::LockedCharacteristic;
 pub use descriptor::Descriptor;
+pub use descriptor::LockedDescriptor;
+pub use profile::LockedProfile;
 pub use profile::Profile;
+pub use service::LockedService;
 pub use service::Service;
 
 // Structs.
@@ -77,7 +79,7 @@ lazy_static! {
             include_txpower: true,
             min_interval: 0x0006,
             max_interval: 0x0010,
-            appearance: Appearance::GenericUnknown.into(),
+            appearance:  Appearance::GenericUnknown.into(),
             manufacturer_len: 0,
             p_manufacturer_data: std::ptr::null_mut(),
             service_data_len: 0,
@@ -111,7 +113,7 @@ lazy_static! {
 ///
 /// This is a singleton, and can be accessed via the [`GLOBAL_GATT_SERVER`] static.
 pub struct GattServer {
-    profiles: Vec<Arc<RwLock<Profile>>>,
+    profiles: Vec<LockedProfile>,
     started: bool,
     advertisement_parameters: esp_ble_adv_params_t,
     advertisement_data: esp_ble_adv_data_t,
@@ -192,7 +194,7 @@ impl GattServer {
     /// # Panics
     ///
     /// Panics if the service lock is poisoned.
-    pub fn advertise_service(&mut self, service: &Arc<RwLock<Service>>) -> &mut Self {
+    pub fn advertise_service(&mut self, service: &LockedService) -> &mut Self {
         let uuid = service.read().uuid.as_uuid128_array();
         self.scan_response_data.p_service_uuid = leaky_box_raw!(uuid).cast::<u8>();
         self.scan_response_data.service_uuid_len = uuid.len() as u16;
@@ -201,7 +203,7 @@ impl GattServer {
     }
 
     /// Add a [`Profile`] to the GATT server.
-    pub fn profile(&mut self, profile: Arc<RwLock<Profile>>) -> &mut Self {
+    pub fn profile(&mut self, profile: LockedProfile) -> &mut Self {
         if self.started {
             warn!("Cannot add profile after server has started.");
             return self;
@@ -211,7 +213,7 @@ impl GattServer {
         self
     }
 
-    pub(crate) fn get_profile(&self, interface: u8) -> Option<Arc<RwLock<Profile>>> {
+    pub(crate) fn get_profile(&self, interface: u8) -> Option<LockedProfile> {
         self.profiles
             .iter()
             .find(|profile| profile.write().interface == Some(interface))
@@ -382,6 +384,10 @@ impl GattServer {
             esp_nofail!(esp_ble_gap_register_callback(Some(
                 Self::default_gap_callback
             )));
+            esp_nofail!(esp_ble_tx_power_set(
+                esp_ble_power_type_t_ESP_BLE_PWR_TYPE_DEFAULT,
+                esp_power_level_t_ESP_PWR_LVL_P21,
+            ));
         }
     }
 
@@ -395,7 +401,6 @@ impl GattServer {
     ) {
         GLOBAL_GATT_SERVER
             .lock()
-            .expect("Cannot lock global GATT server.")
             .gatts_event_handler(event, gatts_if, param);
     }
 
@@ -406,9 +411,6 @@ impl GattServer {
         event: esp_gap_ble_cb_event_t,
         param: *mut esp_ble_gap_cb_param_t,
     ) {
-        GLOBAL_GATT_SERVER
-            .lock()
-            .expect("Cannot lock global GATT server.")
-            .gap_event_handler(event, param);
+        GLOBAL_GATT_SERVER.lock().gap_event_handler(event, param);
     }
 }

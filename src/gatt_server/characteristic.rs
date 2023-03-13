@@ -1,5 +1,6 @@
 use crate::{
     gatt_server::descriptor::Descriptor,
+    gatt_server::descriptor::LockedDescriptor,
     leaky_box_raw,
     utilities::{AttributeControl, AttributePermissions, BleUuid, CharacteristicProperties},
 };
@@ -13,6 +14,8 @@ use log::{debug, warn};
 use parking_lot::RwLock;
 use std::{fmt::Formatter, sync::Arc};
 
+/// Shorthand for our locked characteristics that are returned everywhere
+pub type LockedCharacteristic = Arc<RwLock<Characteristic>>;
 type WriteCallback = dyn Fn(Vec<u8>, esp_ble_gatts_cb_param_t_gatts_write_evt_param) + Send + Sync;
 
 /// Represents a GATT characteristic.
@@ -25,7 +28,7 @@ pub struct Characteristic {
     /// The function to be called when a write happens. This functions receives the written value in the first parameter, a `Vec<u8>`.
     pub(crate) write_callback: Option<Arc<WriteCallback>>,
     /// A list of descriptors for this characteristic.
-    pub(crate) descriptors: Vec<Arc<RwLock<Descriptor>>>,
+    pub(crate) descriptors: Vec<LockedDescriptor>,
     /// The handle that the Bluetooth stack assigned to this characteristic.
     pub(crate) attribute_handle: Option<u16>,
     /// The handle of the containing service.
@@ -65,7 +68,7 @@ impl Characteristic {
     }
 
     /// Adds a [`Descriptor`] to the [`Characteristic`].
-    pub fn descriptor(&mut self, descriptor: &Arc<RwLock<Descriptor>>) -> &mut Self {
+    pub fn descriptor(&mut self, descriptor: &LockedDescriptor) -> &mut Self {
         self.descriptors.push(descriptor.clone());
         self
     }
@@ -228,7 +231,7 @@ impl Characteristic {
     /// The returned value can be passed to any function of this crate that expects a [`Characteristic`].
     /// It can be used in different threads, because it is protected by an `RwLock`.
     #[must_use]
-    pub fn build(&self) -> Arc<RwLock<Self>> {
+    pub fn build(&self) -> LockedCharacteristic {
         Arc::new(RwLock::new(self.clone()))
     }
 
