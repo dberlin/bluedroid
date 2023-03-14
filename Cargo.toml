@@ -10,8 +10,8 @@ categories = ["embedded", "hardware-support"]
 readme = "README.md"
 documentation = "https://docs.rs/bluedroid"
 authors = ["Riccardo Persello <riccardo.persello@icloud.com>"]
-
 exclude = [".embuild", ".idea", ".vscode", "target", "Cargo.lock"]
+publish = false
 
 [package.metadata.espflash]
 partition_table = "partitions.csv"
@@ -49,7 +49,7 @@ name = "server"
 required-features = ["esp-idf-sys/binstart"]
 
 [profile.release]
-strip = true
+#strip = true
 opt-level = "z"
 lto = true
 
