@@ -5,7 +5,7 @@
 use std::collections::HashSet;
 
 use esp_idf_sys::{
-    esp_ble_addr_type_t_BLE_ADDR_TYPE_RPA_PUBLIC, esp_ble_adv_channel_t_ADV_CHNL_ALL,
+    esp_ble_addr_type_t_BLE_ADDR_TYPE_PUBLIC, esp_ble_adv_channel_t_ADV_CHNL_ALL,
     esp_ble_adv_data_t, esp_ble_adv_filter_t_ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
     esp_ble_adv_params_t, esp_ble_adv_type_t_ADV_TYPE_IND, esp_ble_gap_cb_param_t,
     esp_ble_gap_register_callback, esp_ble_gatts_cb_param_t, esp_ble_gatts_register_callback,
@@ -13,8 +13,8 @@ use esp_idf_sys::{
     esp_bluedroid_init, esp_bt_controller_config_t, esp_bt_controller_enable,
     esp_bt_controller_init, esp_bt_controller_mem_release, esp_bt_mode_t_ESP_BT_MODE_BLE,
     esp_bt_mode_t_ESP_BT_MODE_CLASSIC_BT, esp_gap_ble_cb_event_t, esp_gatt_if_t,
-    esp_gatts_cb_event_t, esp_nofail, esp_power_level_t_ESP_PWR_LVL_P21, nvs_flash_erase,
-    nvs_flash_init, AGC_RECORRECT_EN, BLE_HW_TARGET_CODE_ESP32S3_CHIP_ECO0,
+    esp_gatts_cb_event_t, esp_nofail, esp_power_level_t, esp_power_level_t_ESP_PWR_LVL_P9,
+    nvs_flash_erase, nvs_flash_init, AGC_RECORRECT_EN, BLE_HW_TARGET_CODE_ESP32S3_CHIP_ECO0,
     BT_CTRL_SCAN_BACKOFF_UPPERLIMITMAX, CFG_MASK, CONFIG_BT_CTRL_ADV_DUP_FILT_MAX,
     CONFIG_BT_CTRL_BLE_MAX_ACT_EFF, CONFIG_BT_CTRL_BLE_STATIC_ACL_TX_BUF_NB,
     CONFIG_BT_CTRL_CE_LENGTH_TYPE_EFF, CONFIG_BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EFF,
@@ -68,9 +68,10 @@ lazy_static! {
             adv_int_min: 0x20,
             adv_int_max: 0x40,
             adv_type: esp_ble_adv_type_t_ADV_TYPE_IND,
-            own_addr_type: esp_ble_addr_type_t_BLE_ADDR_TYPE_RPA_PUBLIC,
+            own_addr_type: esp_ble_addr_type_t_BLE_ADDR_TYPE_PUBLIC,
             channel_map: esp_ble_adv_channel_t_ADV_CHNL_ALL,
             adv_filter_policy: esp_ble_adv_filter_t_ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
+            peer_addr_type: esp_ble_addr_type_t_BLE_ADDR_TYPE_PUBLIC,
             ..Default::default()
         },
         advertisement_data: esp_ble_adv_data_t {
@@ -106,6 +107,7 @@ lazy_static! {
         advertisement_configured: false,
         device_name: "ESP32".to_string(),
         active_connections: HashSet::new(),
+        power_level: esp_power_level_t_ESP_PWR_LVL_P9
     });
 }
 
@@ -121,6 +123,7 @@ pub struct GattServer {
     device_name: String,
     advertisement_configured: bool,
     active_connections: HashSet<Connection>,
+    power_level: esp_power_level_t,
 }
 
 unsafe impl Send for GattServer {}
@@ -139,11 +142,26 @@ impl GattServer {
 
         self.started = true;
         Self::initialise_ble_stack();
-
+        unsafe {
+            esp_nofail!(esp_ble_tx_power_set(
+                esp_ble_power_type_t_ESP_BLE_PWR_TYPE_DEFAULT,
+                self.power_level
+            ));
+        }
         // Registration of profiles, services, characteristics and descriptors.
         self.profiles.iter().for_each(|profile| {
             profile.write().register_self();
         });
+    }
+
+    /// Sets the default power level to be used for bluetooth
+    ///
+    /// ESP unfortunately accepts invalid power levels with no error,
+    /// so if you have the power level set and your device is not advertising,
+    /// check here
+    pub fn power_level(&mut self, power_level: esp_power_level_t) -> &mut Self {
+        self.power_level = power_level;
+        self
     }
 
     /// Sets the name to be advertised in GAP packets.
@@ -384,10 +402,6 @@ impl GattServer {
             esp_nofail!(esp_ble_gap_register_callback(Some(
                 Self::default_gap_callback
             )));
-            esp_nofail!(esp_ble_tx_power_set(
-                esp_ble_power_type_t_ESP_BLE_PWR_TYPE_DEFAULT,
-                esp_power_level_t_ESP_PWR_LVL_P21,
-            ));
         }
     }
 
