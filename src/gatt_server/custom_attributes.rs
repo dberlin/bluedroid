@@ -16,13 +16,11 @@ pub struct SettableStorage {
 }
 
 impl SettableStorage {
-    pub fn new_with_storage_partition(storage: EspDefaultNvsPartition) -> Self {
-        Self {
-            storage: Mutex::new(Some(Arc::new(Mutex::new(
-                EspDefaultNvs::new(storage, "ble", true)
-                    .expect("Cannot create a new NVS storage. Did you declare an NVS partition?"),
-            )))),
-        }
+    pub fn set_storage_partition(&self, storage: EspDefaultNvsPartition) {
+        *self.storage.lock() = Some(Arc::new(Mutex::new(
+            EspDefaultNvs::new(storage, "ble", true)
+                .expect("Cannot create a new NVS storage. Did you declare an NVS partition?"),
+        )))
     }
     pub const fn new() -> Self {
         Self {
