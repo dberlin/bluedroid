@@ -39,13 +39,13 @@ use crate::{
 
 pub use characteristic::Characteristic;
 pub use characteristic::LockedCharacteristic;
+pub use custom_attributes::STORAGE;
 pub use descriptor::Descriptor;
 pub use descriptor::LockedDescriptor;
 pub use profile::LockedProfile;
 pub use profile::Profile;
 pub use service::LockedService;
 pub use service::Service;
-
 // Structs.
 mod characteristic;
 mod descriptor;
