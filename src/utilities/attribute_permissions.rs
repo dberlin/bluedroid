@@ -1,7 +1,4 @@
-use esp_idf_sys::{
-    esp_gatt_perm_t, ESP_GATT_PERM_READ, ESP_GATT_PERM_READ_ENCRYPTED, ESP_GATT_PERM_WRITE,
-    ESP_GATT_PERM_WRITE_ENCRYPTED,
-};
+use esp_idf_sys::*;
 
 /// Represents an attribute's access permissions.
 ///

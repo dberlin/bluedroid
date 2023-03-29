@@ -1,11 +1,9 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::{
     gatt_server::Descriptor,
     utilities::{AttributePermissions, BleUuid},
 };
-
-use std::sync::{Arc, Mutex};
 
 use esp_idf_svc::nvs::{EspDefaultNvs, EspDefaultNvsPartition};
 use log::debug;

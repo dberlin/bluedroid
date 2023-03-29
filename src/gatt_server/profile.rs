@@ -1,5 +1,5 @@
 use super::LockedService;
-use esp_idf_sys::{esp_ble_gatts_app_register, esp_gatt_id_t, esp_nofail};
+use esp_idf_sys::*;
 use log::debug;
 use parking_lot::RwLock;
 use std::sync::Arc;

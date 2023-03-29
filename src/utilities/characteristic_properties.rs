@@ -1,9 +1,4 @@
-use esp_idf_sys::{
-    esp_gatt_char_prop_t, ESP_GATT_CHAR_PROP_BIT_AUTH, ESP_GATT_CHAR_PROP_BIT_BROADCAST,
-    ESP_GATT_CHAR_PROP_BIT_EXT_PROP, ESP_GATT_CHAR_PROP_BIT_INDICATE,
-    ESP_GATT_CHAR_PROP_BIT_NOTIFY, ESP_GATT_CHAR_PROP_BIT_READ, ESP_GATT_CHAR_PROP_BIT_WRITE,
-    ESP_GATT_CHAR_PROP_BIT_WRITE_NR,
-};
+use esp_idf_sys::*;
 use log::warn;
 
 /// Represents the properties of a [`Characteristic`].
