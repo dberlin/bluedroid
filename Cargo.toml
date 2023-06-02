@@ -26,23 +26,23 @@ rustdoc-args = ["--no-deps"]
 cargo-args = ["-Z", "build-std"]
 
 [dependencies]
-esp-idf-sys = { version = "0.32.1", features = ["native"] }
-esp-idf-svc = { version = "0.45.0" }
-embedded-svc = { version = "0.24.0" }
-log = { version = "0.4.17" }
+esp-idf-sys = { version = "0.*", features = ["native"] }
+esp-idf-svc = { version = "0.*" }
+embedded-svc = { version = "0.*" }
+log = { version = "0.4.18" }
 parking_lot = "0.12.1"
 lazy_static = "1.4.0"
 
 [build-dependencies]
-embuild = { version = "0.31.0" }
-anyhow = { version = "1.0.69" }
+embuild = { version = "0.31.2" }
+anyhow = { version = "1.0.71" }
 
 [dev-dependencies]
-anyhow = { version = "1.0.69" }
-esp-idf-sys = { version = "0.32.1", features = ["native", "binstart"] }
-esp-idf-svc = { version = "0.45.0" }
-esp-idf-hal = { version = "=0.40.1" }
-embedded-hal = { version = "1.0.0-alpha.9" }
+anyhow = { version = "1.0.71" }
+esp-idf-sys = { version = "0.*", features = ["native", "binstart"] }
+esp-idf-svc = { version = "0.*" }
+esp-idf-hal = { version = "0.*" }
+embedded-hal = { version = "1.0.0-alpha.10" }
 
 [[example]]
 name = "server"
@@ -52,6 +52,3 @@ required-features = ["esp-idf-sys/binstart"]
 #strip = true
 opt-level = "z"
 lto = true
-
-[patch.crates-io]
-esp-idf-svc = { git = "https://github.com/esp-rs/esp-idf-svc.git", version = "0.45.0" }
