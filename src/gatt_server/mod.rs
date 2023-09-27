@@ -344,9 +344,9 @@ impl GattServer {
             mesh_adv_size: MESH_DUPLICATE_SCAN_CACHE_SIZE as u16,
             coex_phy_coded_tx_rx_time_limit: CONFIG_BT_CTRL_COEX_PHY_CODED_TX_RX_TLIM_EFF as u8,
 
-            #[cfg(any(esp_idf_version = "4.4", esp_idf_version = "5.0"))]
+            #[cfg(any(esp_idf_version = "4.4"))]
             hw_target_code: BLE_HW_TARGET_CODE_ESP32S3_CHIP_ECO0,
-            #[cfg(esp_idf_version = "5.1")]
+            #[cfg(esp_idf_version = "5.0")]
             hw_target_code: BLE_HW_TARGET_CODE_CHIP_ECO0,
             slave_ce_len_min: SLAVE_CE_LEN_MIN_DEFAULT as u8,
             hw_recorrect_en: AGC_RECORRECT_EN as u8,
@@ -359,7 +359,7 @@ impl GattServer {
             scan_backoff_upperlimitmax: BT_CTRL_SCAN_BACKOFF_UPPERLIMITMAX as u16,
             #[cfg(any(esp_idf_version = "5.0", esp_idf_version = "5.1"))]
             dup_list_refresh_period: DUPL_SCAN_CACHE_REFRESH_PERIOD as u16,
-            #[cfg(any(esp_idf_version = "5.1"))]
+            #[cfg(any(esp_idf_version = "5.0"))]
             ble_50_feat_supp: EXT_CSD_SEC_FEATURE_SUPPORT != 0,
         };
         // BLE controller initialisation.
